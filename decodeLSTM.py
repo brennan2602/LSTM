@@ -53,50 +53,48 @@ def piano_roll_to_pretty_midi(piano_roll, fs=1, program=0):
     return pm
 
 def decode(test):
-	test=test[:-1]
-	output=test.split("\n")
-	#print(output)
-	res = len(output)
-	arr=np.zeros((128,res))
-	print(arr.shape)
-	timeindex=0
+	test = test[:-1]  # takes in the endoded data and looks at all lines except the last line (always blank)
+	output = test.split("\n")  # splits on newline character
+	res = len(output)  # this is how many samples long the song will be
+	arr = np.zeros((128, res))  # initialising a piano roll array with zeros for this length
+	timeindex = 0
 	for x in output:
-		newx=x.replace(")(", "-")
-		newx=newx.replace("(","")
-		newx=newx.replace(")","")
-		noteGroup = newx.split("-")
+		newx = x.replace(")(", "-")  # this is the seperator between different note/velocity pairs in the same sample
+		newx = newx.replace("(", "")  # removing the outer bracket
+		newx = newx.replace(")", "")  # removing the other outer bracket
+		noteGroup = newx.split("-")  # splitting into separate note/velocity pairs
 		for n in noteGroup:
 			if n != "#":
-				#print(n)
-				s=len(n.split(","))
-				#print(s)
-				if s==2:
-					note,velocity = n.split(",")
-					if velocity.count("#")>0 or velocity.count('.')>1:
-						velocity=0
-						note = 0
-					elif note.count("#")>0 or note.count('.')>1:
-						note=0
+				s = len(n.split(","))  # this is checking to make sure there aren't more commas then expected
+				if s == 2:  # if there is only one  comma then note/velocity follows expected format
+					note, velocity = n.split(",")  # splitting into note/velocity
+					if velocity.count("#") > 0 or velocity.count('.') > 1:  # these are flaws in generation so replace with 0
 						velocity = 0
-					note=float(note)
+						note = 0
+					elif note.count("#") > 0 or note.count('.') > 1:  # these are flaws in generation so replace with 0
+						note = 0
+						velocity = 0
+					try:
+						note = float(note)  # checking for an error
+					except:
+						note = 0
 
-					if int(note)>126:
-						note =0
-						velocity = 0
-					if velocity=="":
-						velocity=0
-						note = 0
-					if int(float(velocity))>126:
-						velocity=0
-						note = 0
-					arr[int(note),timeindex]=velocity
-					print(note,velocity)
-		timeindex=timeindex+1
-	#arr=arr.T
+				if int(note) > 126:  # casting into int if over 126 it isnt a valid midi note so replace with 0
+					note = 0
+					velocity = 0
+				if velocity == "":  # checking for a common error when encoding velocity if found replace with 0
+					velocity = 0
+					note = 0
+				if int(float(velocity)) > 126:  # casting to int if over 126 it isnt a valid midi vel so replace with 0
+					velocity = 0
+					note = 0
+				arr[int(note), timeindex] = velocity  # updating point in piano roll with velocity
+		timeindex = timeindex + 1  # incrementing through to next time index (sample) in song
+	# arr=arr.T
 	return arr
 
 
-with open('generated.txt') as f:
+with open(r'C:\Users\brenn\Desktop\FYP_DATA\generated\LSTM\combined\5 songs mono\25epo\shortened.txt') as f:
 	lines = f.readlines()
 outString=""
 for l in lines:

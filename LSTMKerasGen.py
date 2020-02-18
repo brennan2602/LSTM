@@ -8,17 +8,14 @@ import tensorflow as tf
 import numpy as np
 import io
 import random
-import sys
 
-import matplotlib.pyplot as plt
 
-from tensorflow_core.python.keras.callbacks import LambdaCallback
+path = "encodedData.txt" #training data stored here
 
-path = "encodedData.txt"
+#defining vocabulary
 with io.open(path, encoding='utf-8') as f:
     text = f.read().lower()
 print('corpus length:', len(text))
-
 chars = sorted(list(set(text)))
 print('total chars:', len(chars))
 char_indices = dict((c, i) for i, c in enumerate(chars))
@@ -34,6 +31,7 @@ for i in range(0, len(text) - maxlen, step):
     next_chars.append(text[i + maxlen])
 print('nb sequences:', len(sentences))
 
+#converting to vectors
 print('Vectorization...')
 x = np.zeros((len(sentences), maxlen, len(chars)), dtype=np.bool)
 y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
@@ -51,7 +49,6 @@ def build_model():
     return model
 
 model=build_model()
-#optimizer = RMSprop(learning_rate=0.01)
 model.compile(loss='categorical_crossentropy', optimizer="adam")
 
 
@@ -66,60 +63,35 @@ def sample(preds, temperature=1.0):
 
 
 def generate():
-    # Function invoked at end of each epoch. Prints generated text.
-    # print()
-    # print('----- Generating text after Epoch: %d' % epoch)
-
-    start_index = random.randint(0, len(text) - maxlen - 1)
-    #for diversity in [0.2, 0.5, 1.0, 1.2]:
-    diversity=0.8 #temperature
-    #print('----- diversity:', diversity)
-    generated = ''
-    sentence = text[start_index: start_index + maxlen]
-    generated += sentence
-    #print('----- Generating with seed: "' + sentence + '"')
-    #sys.stdout.write(generated)
+    # Function generates text.
+    start_index = random.randint(0, len(text) - maxlen - 1) #this is used to get the seed string when generating
+    diversity=1 #equivalent to temperature
+    #generated = ''
+    sentence = text[start_index: start_index + maxlen] #initial seed
+    #generated += sentence
     genVals=""
     for i in range(15000):
         x_pred = np.zeros((1, maxlen, len(chars)))
         for t, char in enumerate(sentence):
             x_pred[0, t, char_indices[char]] = 1.
-
         preds = model.predict(x_pred, verbose=0)[0]
         next_index = sample(preds, diversity)
         next_char = indices_char[next_index]
-
         sentence = sentence[1:] + next_char
-        genVals=genVals+next_char
-        #sys.stdout.write(next_char)
-        #sys.stdout.flush()
-    #print("\nhere\n")
-    print(genVals)
+        genVals=genVals+next_char #updating sequence with new character
+    #print(genVals)
+    #print(generated)
     file1 = open("generated.txt", "a")
     file1.write(genVals)
     file1.close()
 
-
-#print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
 checkpoint_dir = './lstm_training_checkpoints'
-# Name of the checkpoint files
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt_{epoch}")
-
-# checkpoint_callback=tf.keras.callbacks.ModelCheckpoint(
-#     filepath=checkpoint_prefix,
-#     save_weights_only=True)
-# history = model.fit(x, y,
-#           batch_size=128,
-#           epochs=20, callbacks=[checkpoint_callback])
-
-tf.train.latest_checkpoint(checkpoint_dir)
+tf.train.latest_checkpoint(checkpoint_dir)# getting latest checkpoint
+print(tf.train.latest_checkpoint(checkpoint_dir))
 model = build_model()
-model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
+model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))#loading model with latest checkpoint
 model.build(tf.TensorShape([1, None]))
 model.summary()
 generate()
-# plt.plot(history.history["loss"])
-# plt.title("model loss")
-# plt.ylabel("loss")
-# plt.xlabel("epoch")
-# plt.show()
+
