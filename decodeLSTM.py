@@ -94,7 +94,7 @@ def decode(test):
 	return arr
 
 
-with open(r'C:\Users\brenn\Desktop\FYP_DATA\generated\LSTM\combined\5 songs mono\25epo\shortened.txt') as f:
+with open('generated.txt') as f:
 	lines = f.readlines()
 outString=""
 for l in lines:
